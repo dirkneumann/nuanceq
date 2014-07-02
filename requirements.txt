@@ -1,0 +1,10 @@
+cython
+flask
+flask-compress
+gensim
+nltk
+nytimesarticle
+python-s3file
+redis
+scikit-learn
+twitter

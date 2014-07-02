@@ -1,0 +1,716 @@
+<html>
+<head>
+  <title>Analytics</title>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dc/1.7.1/dc.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.1.0/css/font-awesome.min.css">
+</head>
+<body>
+  <div class="container-fluid wrapper">
+    <div class="row">
+  
+  <style>
+  .node {
+      background-repeat:no-repeat;
+      background-attachment:relative;
+      background-position:center center;
+      background-size:cover;
+      border:solid 1px rgba(255,255,255,.5);
+      cursor:pointer;
+      padding-top:4px;
+      font:14px sans-serif;
+      overflow:hidden;
+      position:absolute;
+      text-align:center;
+      opacity:.33
+  }
+
+  .node.selected {
+      opacity:1
+  }
+
+  .clickable {
+      cursor:pointer
+  }
+
+  .dayOfWeek {
+      fill:#4682b4
+  }
+
+  .sparkline {
+      fill:none;
+      stroke:#000;
+      stroke-width:.5px
+  }
+
+  .sparkcircle {
+      fill:red;
+      stroke:none
+  }
+
+  .axis text {
+      fill:#fff;
+      font:10px sans-serif
+  }
+
+  .axis path,.axis line {
+      fill:none;
+      stroke:#000;
+      shape-rendering:crispEdges
+  }
+
+  .y.axis path {
+      display:none
+  }
+
+  .selectedEmotion {
+      text-align:right
+  }
+
+  .headline {
+      margin-bottom:.75em
+  }
+
+  .headline .value {
+      color:gray
+  }
+  </style>
+
+  <div class="col-xs-12 hidden-md hidden-lg">
+    <svg class="sparkline1 sparkline chart"></svg>
+    <table width="100%">
+      <tr>
+        <td class="selectedQuery selected" width="90%"></td>
+        <td class="selectedEmotion selected" width="10%"></td>
+      </tr>
+    </table>
+  </div>
+  <div class="col-xs-12 col-md-10">
+    <div class="treemap chart"></div>
+  </div>
+  <div class="hidden-xs hidden-sm col-xs-2">
+    <svg class="sparkline2 sparkline chart"></svg>
+    <table width="100%">
+      <tr>
+        <td class="selectedQuery selected" width="90%"></td>
+        <td class="selectedEmotion selected" width="10%"></td>
+      </tr>
+    </table>
+    <br/><br/>
+    <a onclick="$('.dayOfWeek').show(500); $(this).hide(); $('.hide-calendar').show()" class="show-calendar"><i class="fa fa-calendar-o fa-2x"></i></a><a onclick="$('.dayOfWeek').hide(500); $(this).hide(); $('.show-calendar').show()" style="display: none;" class="hide-calendar"><i class="fa fa-calendar fa-2x"></i></a>
+    &nbsp; &nbsp;
+    <a onclick="$('.headlines').show(500); $(this).hide(); $('.hide-headlines').show()" class="show-headlines" ><i class="fa fa-file-text-o fa-2x"></i></a><a onclick="$('.headlines').hide(500); $(this).hide(); $('.show-headlines').show()" class="hide-headlines" style="display: none;" ><i class="fa fa-file-text fa-2x"></i></a>
+    <br/><br/>
+    <svg class="dayOfWeek chart" style="display: none"></svg>
+    <br/><br/>
+    <div class="headlines" style="display: none"></div>
+    <br/><br/>
+    <div style="position: fixed; bottom: 12px;">
+      <a><i class="fa fa-cogs fa-2x"></i> &nbsp; How Nuance/Q Works</a><br/><br/>
+      <a><i class="fa fa-user fa-2x"></i> &nbsp; About the Author</a> &nbsp; <a target="_blank" href="http://www.linkedin.com/in/dirkneumann"><i class="fa fa-linkedin-square fa-1x"></i></a>
+    </div>
+  </div>
+  <script src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.4.8/d3.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crossfilter/1.3.7/crossfilter.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dc/1.7.1/dc.min.js"></script>
+  <script>
+  var valence = {
+      'happy': 'positive',
+      'sad': 'negative',
+      'surprised': 'positive',
+      'angry': 'negative',
+      'fearful': 'negative',
+      'disgusted': 'negative',
+      'interest': 'positive',
+      'distracted': 'negative',
+  };
+  var emotionCategories = {
+      'Nuance/Q': 'happy',
+      'positive': 'positive',
+      'negative': 'negative',
+      'distracted': 'distracted',
+
+      'happy': 'happy',
+      'sad': 'sad',
+      'surprised': 'surprised',
+      'angry': 'angry',
+      'fearful': 'fearful',
+      'disgusted': 'disgusted',
+
+      'surprise': 'surprised',
+      'rage': 'angry',
+      'vigilance': 'fearful',
+      'ecstasy': 'happy',
+      'sadness': 'sad',
+      'fear': 'fearful',
+      'joy': 'happy',
+      'hate': 'angry',
+      'disgust': 'disgusted',
+
+      'terror': 'fearful',
+      'amazement': 'happy',
+      'grief': 'sad',
+      'loathing': 'disgusted',
+      'anger': 'angry',
+      'annoyance': 'angry',
+      'aggressiveness': 'angry',
+      'optimism': 'happy',
+      'love': 'happy',
+      'submission': 'fearful',
+      'awe': 'happy',
+      'disapproval': 'disgusted',
+      'remorse': 'sad',
+      'contempt': 'happy',
+
+      'anticipation': 'interest',
+      'boredom': 'distracted',
+      'distraction': 'distracted',
+      'trust': 'interest',
+      'admiration': 'interest',
+      'interest': 'interest',
+      'serenity': 'interest',
+      'acceptance': 'interest',
+      'apprehension': 'interest',
+      'distraction': 'distracted',
+      'thoughtful': 'interest',
+  }
+
+  function nest(data, categories) {
+      var all = {};
+      for (i in data) {
+          category = categories[data[i].key];
+          if (category == undefined) {
+              console.log(data[i].key);
+          }
+          all[category] = all[category] || [];
+          all[category].push(data[i]);
+      }
+      results = [];
+      for (category in all) {
+          results.push({
+              key: category,
+              children: all[category]
+          });
+      }
+      return results;
+  }
+
+  function nestEmotion(data) {
+      var all = {};
+      for (i in data) {
+          emotion = data[i].emotion;
+          all[emotion] = all[emotion] || [];
+          all[emotion].push(data[i]);
+          data[i].oldValue = data[i].value; // treemap overwrites value
+      }
+      results = [];
+      for (emotion in all) {
+          results.push({
+              key: emotion,
+              children: all[emotion]
+          });
+      }
+      return results;
+  }
+
+  df = undefined;
+  count = undefined;
+  avg = undefined;
+  daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+  selectedEmotion = 'happy';
+  selectedQuery = undefined;
+
+  var r = {
+      init: function () {
+          return {
+              s: {},
+              s2: {},
+              n: {},
+              avg: {},
+              std: {},
+              maxEmotion: undefined
+          };
+      },
+      add: function (x, v) {
+          var zMax = -Infinity;
+          var maxEmotion = undefined;
+          for (emotion in v.emotion) {
+              var value = v.emotion[emotion];
+              if (!isNaN(value)) {
+                  x.s[emotion] = (x.s[emotion] || 0) + value;
+                  x.s2[emotion] = (x.s2[emotion] || 0) + value * value;
+                  x.n[emotion] = (x.n[emotion] || 0) + 1;
+                  x.avg[emotion] = x.s[emotion] / x.n[emotion];
+                  x.std[emotion] = Math.sqrt((x.s2[emotion] - x.s[emotion] * x.s[emotion] / x.n[emotion]) / ((x.n[emotion] || 1) - 1));
+                  if (x.avg[emotion] > zMax) {
+                      zMax = x.avg[emotion];
+                      maxEmotion = emotion;
+                  }
+              }
+          }
+          x.maxEmotion = maxEmotion;
+          return x;
+      },
+      remove: function (x, v) {
+          for (emotion in v.emotion) {
+              value = v.emotion[emotion];
+              if (!isNaN(value)) {
+                  x.s[emotion] = (x.s[emotion] || 0) - value;
+                  x.s2[emotion] = (x.s2[emotion] || 0) - value * value;
+                  x.n[emotion] = (x.n[emotion] || 0) - 1;
+                  x.avg[emotion] = x.s[emotion] / x.n[emotion];
+                  x.std[emotion] = Math.sqrt((x.s2[emotion] - x.s[emotion] * x.s[emotion] / x.n[emotion]) / ((x.n[emotion] || 1) - 1));
+              }
+          }
+          return x;
+      },
+  }
+
+  var date;
+  var g_data;
+
+  WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+  function bin(x, w) {
+      return x - x % w;
+  }
+
+  function erf(x) {
+      // constants
+      var a1 = 0.254829592;
+      var a2 = -0.284496736;
+      var a3 = 1.421413741;
+      var a4 = -1.453152027;
+      var a5 = 1.061405429;
+      var p = 0.3275911;
+
+      // Save the sign of x
+      var sign = 1;
+      if (x < 0) {
+          sign = -1;
+      }
+      x = Math.abs(x);
+
+      // A&S formula 7.1.26
+      var t = 1.0 / (1.0 + p * x);
+      var y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
+
+      return sign * y;
+  }
+
+  function cdf(x, mean, variance) {
+      return 0.5 * (1 + erf((x - mean) / (Math.sqrt(2 * variance))));
+  }
+
+  function erf(x) {
+      // save the sign of x
+      var sign = (x >= 0) ? 1 : -1;
+      x = Math.abs(x);
+
+      // constants
+      var a1 = 0.254829592;
+      var a2 = -0.284496736;
+      var a3 = 1.421413741;
+      var a4 = -1.453152027;
+      var a5 = 1.061405429;
+      var p = 0.3275911;
+
+      // A&S formula 7.1.26
+      var t = 1.0 / (1.0 + p * x);
+      var y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
+      return sign * y; // erf(-x) = -erf(x);
+  }
+
+  var day = undefined;
+  var dayOfWeek = undefined;
+  var maxEmotion = undefined;
+  var query = undefined;
+
+  d3.json('http://api.nuanceq.com/all_articles.json', function (err, data) {
+      if (err) {
+          console.log(err);
+      }
+      g_data = data;
+
+      // parse date
+      for (i in data) {
+          data[i].date = new Date(data[i].pub_date);
+          data[i].dayOfWeek = (data[i].date.getDay() + 6) % 7;
+          data[i].day = new Date(bin(data[i].date.getTime(), 1e3 * 60 * 60 * 24));
+          data[i].week = new Date(bin(data[i].date.getTime(), 1e3 * 60 * 60 * 24 * 7));
+      }
+      // group by
+      cf = crossfilter(data);
+      all = cf.groupAll().reduce(r.add, r.remove, r.init).value();
+
+      for (i in data) {
+          var zMax = -Infinity;
+          var maxEmotion2 = undefined;
+          var zSum = 0;
+          for (emotion in data[i].emotion) {
+              z = (data[i].emotion[emotion] - all.avg[emotion]) / all.std[emotion];
+              data[i].emotion[emotion] = z;
+              zSum = zSum + z;
+              if (z > zMax) {
+                  zMax = z;
+                  maxEmotion2 = emotion;
+              }
+          }
+          data[i].zSum = zSum;
+          data[i].maxEmotion = maxEmotion2;
+      }
+
+      cf = crossfilter(data);
+      cf.dimensions = {
+          _id: cf.dimension(function (d) {
+              return d._id;
+          }),
+          date: cf.dimension(function (d) {
+              return d.date;
+          }),
+          day: cf.dimension(function (d) {
+              return d.day;
+          }),
+          dayOfWeek: cf.dimension(function (d) {
+              return d.dayOfWeek;
+          }),
+          headline: cf.dimension(function (d) {
+              return d.headline.main;
+          }),
+          maxEmotion: cf.dimension(function (d) {
+              return d.maxEmotion;
+          }),
+          pub_date: cf.dimension(function (d) {
+              return d.pub_date;
+          }),
+          week: cf.dimension(function (d) {
+              return d.week;
+          }),
+          query: cf.dimension(function (d) {
+              return d.query;
+          }),
+      }
+      date = cf.dimensions.date.group().reduceCount().all();
+      count = cf.dimensions.query.group().reduceCount().all();
+      query = cf.dimensions.query.group().reduce(r.add, r.remove, r.init); //.order(function(d) { return (d.avg[selectedEmotion] || d.zSum); });
+      maxEmotion = cf.dimensions.maxEmotion.group().reduceCount();
+      headlines = cf.dimensions.headline.group().reduce(r.add, r.remove, r.init);
+
+
+      dayOfWeek = cf.dimensions.dayOfWeek.group().reduce(r.add, r.remove, r.init);
+      day = cf.dimensions.day.group().reduce(r.add, r.remove, r.init);
+
+      redrawCharts();
+      $(window).resize(redrawCharts);
+  });
+
+  function redrawCharts(redraw) {
+      $('.selectedEmotion').text(selectedEmotion);
+      //drawTreemap('.maxEmotion', {key: 'Emotions', children: nest(nest(maxEmotion.all(), emotionCategories), valence)});
+      day2 = day.all().map(function (d) {
+          return {
+              key: d.key,
+              value: (d.value.avg[selectedEmotion] || d.value.avg['happy']),
+          };
+      }).filter(function (d) {
+          return isFinite(d.value);
+      });
+      sparkline('.sparkline1', day2);
+      sparkline('.sparkline2', day2);
+
+      dayOfWeek2 = dayOfWeek.all().map(function (d) {
+          return {
+              key: d.key,
+              value: 100 * cdf(d.value.avg[selectedEmotion] * Math.sqrt(d.value.n[selectedEmotion]), 0, 1),
+          };
+      });
+
+      dayOfWeekChart('.dayOfWeek', dayOfWeek2, redraw);
+
+      query2 = query.all().map(function (d) {
+          return {
+              key: d.key,
+              value: cdf(d.value.avg[selectedEmotion] * Math.sqrt(d.value.n[selectedEmotion]), 0, 1),
+              emotion: d.value.maxEmotion
+          }
+      });
+      drawTreemap('.treemap', {
+          key: 'Nuance/Q',
+          children: nest(nest(nestEmotion(query2), emotionCategories), valence)
+      });
+
+      toph = headlines.order(function (d) {
+          return d.avg[selectedEmotion];
+      }).top(50);
+      $('.headlines').empty();
+      var n = 0;
+      for (i in toph) {
+          var value = toph[i].value.avg[selectedEmotion];
+          if (isNaN(value) || !isFinite(value))
+              continue;
+          $('.headlines').append('<div class="headline"><a>' + toph[i].key + '</a><br/><span class="value">' + Math.round(100 * cdf(value, 0, 1)) + '</span></div>');
+
+          n = n + 1;
+          if (n >= 3)
+              break;
+      }
+  }
+
+  var div;
+  var treemap;
+  var node;
+
+  function drawTreemap(sel, root) {
+      var margin = {
+              top: 0,
+              right: 0,
+              bottom: 0,
+              left: 0
+          },
+          width = $(sel).width() - margin.left - margin.right,
+          height = $(window).height() - margin.top - margin.bottom;
+
+      color = d3.scale.category20c().domain(Object.keys(emotionCategories));
+
+      treemap = d3.layout.treemap()
+          .size([width, height])
+          .padding([24, 0, 0, 0])
+          .sticky(true)
+          .value(function (d) {
+              return d.value;
+          });
+
+      d3.select(sel + ' div').remove();
+
+      div = d3.select(sel).append("div")
+          .style("position", "relative")
+          .style("width", (width + margin.left + margin.right) + "px")
+          .style("height", (height + margin.top + margin.bottom) + "px")
+          .style("left", margin.left + "px")
+          .style("top", margin.top + "px");
+
+      node = div.datum(root).selectAll(".node")
+          .data(treemap.nodes)
+          .enter().append("div")
+          .attr("class", "node clickable")
+          .call(position)
+          .style("background", function (d) {
+              return d.children ? color(d.key) : null;
+          })
+          .attr('title', function (d) {
+              return d.children ? d.key : d.key + ' (' + d.emotion + ')';
+          })
+          .attr('data-key', function (d) {
+              return d.key;
+          })
+          .attr("data-emotion", function (d) {
+              return d.emotion
+          })
+          .text(function (d) {
+              return d.children ? d.key : null;
+          })
+          .on('click', function () {
+              var key = $(this).data('key');
+              if (emotionCategories[key]) {
+                  selectedEmotion = key;
+              } else {
+                  if (selectedQuery == key) {
+                      var emotion = $(this).data('emotion');
+                      if (selectedEmotion == emotion) {
+                          selectedQuery = undefined;
+                          $('.selectedQuery').text('');
+                          cf.dimensions.query.filter(null);
+                      } else {
+                          selectedEmotion = emotion;
+                          $('.selectedEmotion').text(selectedEmotion);
+                          $('.selectedQuery').text(selectedQuery);
+                          cf.dimensions.query.filter(emotion);
+                      }
+                  } else {
+                      selectedQuery = key;
+                      $('.selectedQuery').text(key);
+                      cf.dimensions.query.filter(key);
+                  }
+              }
+              redrawCharts(true);
+          });
+      if (selectedQuery)
+          $('.node[data-key="' + selectedQuery + '"]').addClass('selected');
+      else
+          $('.node').addClass('selected');
+
+      $('.node').each(function (i, d) {
+          var e = $(d);
+          var key = e.data('key');
+          if (emotionCategories[key] == undefined) {
+              var emotion = e.data('emotion');
+              if (selectedQuery) {
+                  emotion = selectedEmotion;
+              }
+              var url = 'url("http://api.nuanceq.com/static/images/' + e.data('key') + ' - ' + e.data('emotion') + '.png")';
+              e.css('background-image', url);
+          }
+      });
+  }
+
+  function position() {
+      this.style("left", function (d) {
+              return d.x + "px";
+          })
+          .style("top", function (d) {
+              return d.y + "px";
+          })
+          .style("width", function (d) {
+              return Math.max(0, d.dx - 1) + "px";
+          })
+          .style("height", function (d) {
+              return Math.max(0, d.dy - 1) + "px";
+          });
+  }
+
+  function sparkline(sel, data) {
+      width = $(sel).width();
+      height = 64;
+      barHeight = height / data.length;
+      barWidth = width / data.length;
+
+      var x = d3.time.scale()
+          .range([0, width - 3])
+          .domain([d3.min(data, function (d) {
+              return d.key;
+          }), d3.max(data, function (d) {
+              return d.key;
+          })]);
+      var y = d3.scale.linear()
+          .range([0, height - 3])
+          .domain([-3, 3])
+          //.domain([d3.min(data, function(d) { return d.value; }), d3.max(data, function(d) { return d.value; })]);
+      ;
+      d3.select(sel + ' path').remove();
+      d3.select(sel + ' circle').remove();
+
+      var chart = d3.select(sel)
+          .attr("width", width)
+          .attr("height", height);
+      var line = d3.svg.line()
+          .interpolate("basis")
+          .x(function (d) {
+              return x(d.key);
+          })
+          .y(function (d) {
+              return y(d.value);
+          });
+      var spark = d3.select(sel)
+          .attr('width', width)
+          .attr('height', height);
+      spark
+          .append('path')
+          .datum(data)
+          //.attr('class', 'sparkline')
+          .attr('d', line);
+      try {
+          spark.append('circle')
+              .attr('class', 'sparkcircle')
+              .attr('cx', x(data[data.length - 1].key))
+              .attr('cy', y(data[data.length - 1].value))
+              .attr('r', 2.5);
+      } catch (err) {
+          console.log('ERROR circle');
+          console.log(err);
+      }
+  }
+
+  var selectedDayOfWeek = undefined;
+  var bar, bars;
+
+  function dayOfWeekChart(sel, data, redraw) {
+      width = $(sel).width();
+      barHeight = 32;
+      height = barHeight * data.length;
+
+      var x = d3.scale.linear()
+          .range([0, width])
+          .domain([0, 100])
+          //.domain([d3.min(data, function(d) { return d.value; }), d3.max(data, function(d) { return d.value; })])
+      ;
+      var y = d3.scale.ordinal()
+          .domain(WEEKDAYS)
+          //.range([0, 1, 2, 3, 4, 5, 6])
+          .rangeBands([0, height]);
+      var yAxis = d3.svg.axis()
+          .scale(y)
+          .orient("right")
+          //.ticks(data.length, "")
+          .tickFormat(function (weekday) {
+              return weekday.substring(0, 3);
+          });
+
+      var chart = d3.select(sel)
+          .attr("width", width)
+          .attr("height", height);
+
+      if (redraw == undefined) {
+          bar = chart.selectAll("g")
+              .data(data)
+              .enter().append("g")
+              .attr("transform", function (d, i) {
+                  return "translate(0, " + i * barHeight + ")";
+              });
+
+          chart.append("g")
+              .attr("class", "y axis")
+              .attr("transform", "translate(-6,0)")
+              .call(yAxis);
+          bars = bar.append("rect")
+              .attr("x", 0)
+              .attr("class", "clickable")
+              .attr("height", barHeight - 4)
+              .attr("data-key", function (d) {
+                  return d.key
+              })
+              .on('click', function () {
+                  var dayOfWeek = $(this).data('key');
+                  if (selectedDayOfWeek == dayOfWeek) {
+                      selectedDayOfWeek = undefined;
+                      $(sel + ' rect').attr('fill', 'steelblue');
+                      cf.dimensions.dayOfWeek.filter(null);
+                  } else {
+                      selectedDayOfWeek = dayOfWeek;
+                      $(sel + ' rect').attr('fill', 'lightgray');
+                      $(sel + ' rect[data-key="' + dayOfWeek + '"]').attr('fill', 'steelblue');
+                      cf.dimensions.dayOfWeek.filterExact(dayOfWeek);
+                  }
+                  console.log(redraw);
+                  redrawCharts(true);
+              });
+          bar.append("text")
+              .attr("y", barHeight / 2)
+              .attr("dy", ".25em")
+              .attr("fill", "white");
+      }
+
+      bar.data(data);
+      bar.select('rect')
+          .attr("width", function (d) {
+              return x(d.value);
+          })
+          .attr("title", function (d) {
+              return Math.round(d.value);
+          });
+      bar.select('text')
+          .attr("x", function (d) {
+              return Math.max(8, x(d.value) - 28);
+          })
+          .text(function (d) {
+              return d.value >= 30 ? Math.round(d.value) : undefined;
+          });
+
+  }
+  
+  </script>
+    </div>
+  </div>
+</body>
+</html>
