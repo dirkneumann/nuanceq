@@ -5,21 +5,24 @@ Nuance/Q reads articles, and summarizes the meaning of the lead paragraph in sem
 
 For politicians and brands, it shows the predominant emotion over time.
 
-    USAGE: cli.py [cmd]
+    USAGE: nuance.py [cmd]
  
-      source .env
-      python cli.py query /business/brand logo >/mnt/data/20140701_business_brand.json
-      python cli.py query /celebrities/celebrity portait >/mnt/data/20140701_celebrities_celebrity.json
-      python cli.py query /government/politician portait >/mnt/data/20140701_government_politician.json
-      gzip /mnt/data/%s_celebritites_celebrity.json
+      source .env        # aws, bing, freebase, nyt keys
  
-      python cli.py crawl </mnt/data/20140701_business_brand.json >/mnt/data/20140701_business_brand_nyt.json
-      python cli.py crawl </mnt/data/20140701_celebrities_celebrity.json >/mnt/data/20140701_celebrities_celebrity_nyt.json
-      python cli.py crawl </mnt/data/20140701_government_politician.json >/mnt/data/20140701_government_politician_nyt.json
+      nuance.py query /business/brand logo >/mnt/data/20140701_business_brand.json
+      nuance.py query /celebrities/celebrity portait >/mnt/data/20140701_celebrities_celebrity.json
+      nuance.py query /government/politician portait >/mnt/data/20140701_government_politician.json
  
-      spark-submit cli.py ingest celebrities_celebrity.json.gz hdfs:///celebrities_celebrity_text8
-      spark-submit cli.py back
+      nuance.py crawl </mnt/data/20140701_business_brand.json >/mnt/data/20140701_business_brand_nyt.json
+      nuance.py crawl </mnt/data/20140701_celebrities_celebrity.json >/mnt/data/20140701_celebrities_celebrity_nyt.json
+      nuance.py crawl </mnt/data/20140701_government_politician.json >/mnt/data/20140701_government_politician_nyt.json
  
-      python cli.py server
+      hadoop fs -cp /mnt/data/20140701_government_politician_nyt.json /
+ 
+      spark-submit ./nuanceq.py ingest celebrities_celebrity.json.gz hdfs:///celebrities_celebrity_vectors_50d
+      spark-submit ./nuanceq.py backend
+ 
+      nuance.py api     # api.nuanceq.com
+      nuance.py front   # nuanceq.com
 
 © 2014 Dirk Neumann

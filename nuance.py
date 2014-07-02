@@ -16,7 +16,7 @@ if __name__ == '__main__':
     today = datetime.date.today()
     today_str = '%04i%02i%02i' % (today.year, today.month, today.day)
     if len(sys.argv) == 1:
-        print 'USAGE: ./nuance.py [cmd]'
+        print 'USAGE: nuance.py [cmd]'
         print ' '
         print '  source .env        # aws, bing, freebase, nyt keys'
         print ' '
